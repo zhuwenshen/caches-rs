@@ -177,7 +177,7 @@ impl<K: Hash + Eq, V> RawLRU<K, V> {
         check_size(cap).map(|_| {
             Self::construct(
                 cap,
-                HashMap::with_capacity_and_hasher(cap, DefaultHashBuilder::default()),
+                HashMap::with_hasher(DefaultHashBuilder::default()),
                 None,
             )
         })
@@ -200,7 +200,7 @@ impl<K: Hash + Eq, V, S: BuildHasher> RawLRU<K, V, DefaultEvictCallback, S> {
         check_size(cap).map(|_| {
             Self::construct(
                 cap,
-                HashMap::with_capacity_and_hasher(cap, hash_builder),
+                HashMap::with_hasher(hash_builder),
                 None,
             )
         })
@@ -241,7 +241,7 @@ impl<K: Hash + Eq, V, E: OnEvictCallback> RawLRU<K, V, E, DefaultHashBuilder> {
         check_size(cap).map(|_| {
             Self::construct(
                 cap,
-                HashMap::with_capacity_and_hasher(cap, DefaultHashBuilder::default()),
+                HashMap::with_hasher(DefaultHashBuilder::default()),
                 Some(cb),
             )
         })
@@ -616,7 +616,7 @@ impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> RawLRU<K, V, E, S> {
         check_size(cap).map(|_| {
             Self::construct(
                 cap,
-                HashMap::with_capacity_and_hasher(cap, hasher),
+                HashMap::with_hasher(hasher),
                 Some(cb),
             )
         })
