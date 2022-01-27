@@ -140,7 +140,9 @@ unsafe fn swap_value<K, V>(v: &mut V, ent: &mut EntryNode<K, V>) {
     mem::swap(v, &mut (*(*ent).val.as_mut_ptr()) as &mut V);
 }
 
-fn debox<K: Hash + Eq, V>(bks: &mut Box<EntryNode<K, V>>) -> *mut EntryNode<K, V> {
+fn debox<K: Hash + Eq + core::fmt::Debug, V>(
+    bks: &mut Box<EntryNode<K, V>>,
+) -> *mut EntryNode<K, V> {
     let ent_ptr: *mut EntryNode<K, V> = &mut **bks;
     ent_ptr
 }

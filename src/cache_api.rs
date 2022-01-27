@@ -5,7 +5,7 @@ use core::hash::Hash;
 
 /// Cache contains the basic APIs for a cache.
 /// All of caches in this crate implement this trait.
-pub trait Cache<K: Hash + Eq, V> {
+pub trait Cache<K: Hash + Eq + core::fmt::Debug, V> {
     /// Puts a key-value pair into cache, returns a [`PutResult`].
     ///
     /// [`PutResult`]: struct.PutResult.html

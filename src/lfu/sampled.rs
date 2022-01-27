@@ -27,7 +27,7 @@ pub struct SampledLFU<K, KH = DefaultKeyHasher<K>, S = DefaultHashBuilder> {
     marker: PhantomData<K>,
 }
 
-impl<K: Hash + Eq> SampledLFU<K> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug> SampledLFU<K> {
     /// Create a new SampledLFU
     pub fn new(max_cost: i64) -> Self {
         Self {
@@ -54,7 +54,9 @@ impl<K: Hash + Eq> SampledLFU<K> {
     }
 }
 
-impl<K: Hash + Eq, S: BuildHasher> SampledLFU<K, DefaultKeyHasher<K>, S> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone, S: BuildHasher>
+    SampledLFU<K, DefaultKeyHasher<K>, S>
+{
     /// Create a new SampledLFU with specific hasher
     #[inline]
     pub fn with_hasher(max_cost: i64, hasher: S) -> Self {
@@ -82,7 +84,7 @@ impl<K: Hash + Eq, S: BuildHasher> SampledLFU<K, DefaultKeyHasher<K>, S> {
     }
 }
 
-impl<K: Hash + Eq, KH: KeyHasher<K>> SampledLFU<K, KH> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone, KH: KeyHasher<K>> SampledLFU<K, KH> {
     /// Create a new SampledLFU with specific hasher
     #[inline]
     pub fn with_key_hasher(max_cost: i64, kh: KH) -> Self {
@@ -110,7 +112,9 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> SampledLFU<K, KH> {
     }
 }
 
-impl<K: Hash + Eq, KH: KeyHasher<K>, S: BuildHasher> SampledLFU<K, KH, S> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone, KH: KeyHasher<K>, S: BuildHasher>
+    SampledLFU<K, KH, S>
+{
     /// Create a new SampledLFU with samples and key hasher
     #[inline]
     pub fn with_samples_and_key_hasher_and_hasher(

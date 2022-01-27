@@ -2,7 +2,7 @@ mod error;
 pub use error::WTinyLFUError;
 
 use crate::lfu::{
-    tinylfu::{TinyLFUError, TinyLFU, TinyLFUBuilder, DEFAULT_FALSE_POSITIVE_RATIO},
+    tinylfu::{TinyLFU, TinyLFUBuilder, TinyLFUError, DEFAULT_FALSE_POSITIVE_RATIO},
     DefaultKeyHasher, KeyHasher,
 };
 use crate::lru::{SegmentedCache, SegmentedCacheBuilder};
@@ -36,7 +36,7 @@ pub struct WTinyLFUCacheBuilder<
     marker: PhantomData<K>,
 }
 
-impl<K: Hash + Eq> Default for WTinyLFUCacheBuilder<K> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug> Default for WTinyLFUCacheBuilder<K> {
     fn default() -> Self {
         Self {
             samples: 0,
@@ -53,7 +53,7 @@ impl<K: Hash + Eq> Default for WTinyLFUCacheBuilder<K> {
     }
 }
 
-impl<K: Hash + Eq> WTinyLFUCacheBuilder<K> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug> WTinyLFUCacheBuilder<K> {
     /// The constructor of WTinyLFUCacheBuilder
     pub fn new(
         window_cache_size: usize,
@@ -69,8 +69,13 @@ impl<K: Hash + Eq> WTinyLFUCacheBuilder<K> {
     }
 }
 
-impl<K: Hash + Eq, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: BuildHasher>
-    WTinyLFUCacheBuilder<K, KH, FH, RH, WH>
+impl<
+        K: Hash + Eq + core::fmt::Debug + core::clone::Clone,
+        KH: KeyHasher<K>,
+        FH: BuildHasher,
+        RH: BuildHasher,
+        WH: BuildHasher,
+    > WTinyLFUCacheBuilder<K, KH, FH, RH, WH>
 {
     /// Set the samples of TinyLFU
     pub fn set_samples(self, samples: usize) -> Self {
@@ -294,7 +299,7 @@ impl<K: Hash + Eq, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: Build
 /// # Example
 /// ```rust
 /// use caches::{WTinyLFUCache, PutResult, Cache};
-/// 
+///
 /// let mut cache = WTinyLFUCache::with_sizes(1, 2, 2, 5).unwrap();
 /// assert_eq!(cache.cap(), 5);
 /// assert_eq!(cache.window_cache_cap(), 1);
@@ -367,7 +372,9 @@ pub struct WTinyLFUCache<
     slru: SegmentedCache<K, V, FH, RH>,
 }
 
-impl<K: Hash + Eq, V> WTinyLFUCache<K, V, DefaultKeyHasher<K>> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone, V>
+    WTinyLFUCache<K, V, DefaultKeyHasher<K>>
+{
     /// Returns a WTinyLFUCache based on the size and samples
     ///
     /// **NOTE:** the size is not the actual cache size,
@@ -429,8 +436,14 @@ impl<K: Hash + Eq, V> WTinyLFUCache<K, V, DefaultKeyHasher<K>> {
     }
 }
 
-impl<K: Hash + Eq, V, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: BuildHasher>
-    WTinyLFUCache<K, V, KH, FH, RH, WH>
+impl<
+        K: Hash + Eq + core::fmt::Debug + core::clone::Clone,
+        V,
+        KH: KeyHasher<K>,
+        FH: BuildHasher,
+        RH: BuildHasher,
+        WH: BuildHasher,
+    > WTinyLFUCache<K, V, KH, FH, RH, WH>
 {
     /// Creates a WTinyLFUCache according to [`WTinyLFUCacheBuilder`]
     ///
@@ -442,8 +455,14 @@ impl<K: Hash + Eq, V, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: Bu
     }
 }
 
-impl<K: Hash + Eq, V, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: BuildHasher>
-    Cache<K, V> for WTinyLFUCache<K, V, KH, FH, RH, WH>
+impl<
+        K: Hash + Eq + core::fmt::Debug + core::clone::Clone,
+        V,
+        KH: KeyHasher<K>,
+        FH: BuildHasher,
+        RH: BuildHasher,
+        WH: BuildHasher,
+    > Cache<K, V> for WTinyLFUCache<K, V, KH, FH, RH, WH>
 {
     /// Puts a key-value pair into cache, returns a [`PutResult`].
     ///
@@ -464,10 +483,9 @@ impl<K: Hash + Eq, V, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: Bu
     /// ```
     ///
     /// [`PutResult`]: struct.PutResult.html
-    fn put(&mut self, k: K, v: V) -> PutResult<K, V>
-    {
+    fn put(&mut self, k: K, v: V) -> PutResult<K, V> {
         #[cfg(any(feature = "nightly", feature = "nightly-core"))]
-        let new_key_ref = &KeyRef {k: &k};
+        let new_key_ref = &KeyRef { k: &k };
 
         #[cfg(not(any(feature = "nightly", feature = "nightly-core")))]
         let new_key_ref = &k;
@@ -483,7 +501,7 @@ impl<K: Hash + Eq, V, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: Bu
                     PutResult::Update(v) => PutResult::Update(v),
                     PutResult::Evicted { key, value } => {
                         #[cfg(any(feature = "nightly", feature = "nightly-core"))]
-                        let evicted_key_ref = &KeyRef{k: &key};
+                        let evicted_key_ref = &KeyRef { k: &key };
 
                         #[cfg(not(any(feature = "nightly", feature = "nightly-core")))]
                         let evicted_key_ref = &key;
@@ -496,10 +514,10 @@ impl<K: Hash + Eq, V, KH: KeyHasher<K>, FH: BuildHasher, RH: BuildHasher, WH: Bu
                             None => self.slru.put(key, value),
                             Some((lruk, _)) => {
                                 #[cfg(any(feature = "nightly", feature = "nightly-core"))]
-                                    let lru_key_ref = &KeyRef{k: lruk};
+                                let lru_key_ref = &KeyRef { k: lruk };
 
                                 #[cfg(not(any(feature = "nightly", feature = "nightly-core")))]
-                                    let lru_key_ref = lruk;
+                                let lru_key_ref = lruk;
 
                                 if self.tinylfu.lt(evicted_key_ref, lru_key_ref) {
                                     PutResult::Evicted { key, value }

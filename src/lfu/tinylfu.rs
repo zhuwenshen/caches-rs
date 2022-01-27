@@ -28,7 +28,7 @@ pub struct TinyLFUBuilder<K, KH = DefaultKeyHasher<K>> {
     marker: PhantomData<K>,
 }
 
-impl<K: Hash + Eq> Default for TinyLFUBuilder<K> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug> Default for TinyLFUBuilder<K> {
     fn default() -> Self {
         Self {
             samples: 0,
@@ -40,14 +40,14 @@ impl<K: Hash + Eq> Default for TinyLFUBuilder<K> {
     }
 }
 
-impl<K: Hash + Eq> TinyLFUBuilder<K> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone> TinyLFUBuilder<K> {
     /// The constructor of TinyLFUBuilder
     pub fn new(size: usize, samples: usize) -> Self {
         Self::default().set_size(size).set_samples(samples)
     }
 }
 
-impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFUBuilder<K, KH> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone, KH: KeyHasher<K>> TinyLFUBuilder<K, KH> {
     /// Set the samples of TinyLFU
     pub fn set_samples(self, samples: usize) -> Self {
         Self {
@@ -127,7 +127,7 @@ pub struct TinyLFU<K, KH = DefaultKeyHasher<K>> {
     marker: PhantomData<K>,
 }
 
-impl<K: Hash + Eq> TinyLFU<K> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone> TinyLFU<K> {
     /// The constructor of TinyLFU
     pub fn new(
         size: usize,
@@ -140,7 +140,7 @@ impl<K: Hash + Eq> TinyLFU<K> {
     }
 }
 
-impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
+impl<K: Hash + Eq + core::fmt::Debug + core::clone::Clone, KH: KeyHasher<K>> TinyLFU<K, KH> {
     /// Returns a TinyLFU according to the [`TinyLFUBuilder`]
     ///
     /// [`TinyLFUBuilder`]: struct.TinyLFUBuilder.html
@@ -159,9 +159,9 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
     ///
     /// [TinyLFU: A Highly Efficient Cache Admission Policy §3.4.2]: https://arxiv.org/pdf/1512.00727.pdf
     pub fn estimate<Q>(&self, key: &Q) -> u64
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
     {
         let kh = self.hash_key(key);
         let mut hits = self.ctr.estimate(kh);
@@ -275,9 +275,9 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
     /// `contains` checks if bit(s) for entry is/are set,
     /// returns true if the hash was added to the TinyLFU.
     pub fn contains<Q>(&self, key: &Q) -> bool
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
     {
         let kh = self.hash_key(key);
         self.doorkeeper.contains(kh)
@@ -291,9 +291,9 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
 
     /// `eq` compares `a` and `b`, returns if `a`'s counter is equal to `b`'s counter.
     pub fn eq<'a, 'b, Q>(&'_ self, a: &'a Q, b: &'b Q) -> bool
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
     {
         let (a_ctr, b_ctr) = self.compare_helper(a, b);
 
@@ -306,9 +306,10 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
 
     /// `le` compares `a` and `b`, returns if `a`'s counter is less or equal to `b`'s counter.
     pub fn le<'a, 'b, Q>(&'_ self, a: &'a Q, b: &'b Q) -> bool
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,  {
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
         let (a_ctr, b_ctr) = self.compare_helper(a, b);
 
         if a_ctr <= b_ctr {
@@ -320,9 +321,10 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
 
     /// `lt` compares `a` and `b`, returns if `a`'s counter is less than `b`'s counter.
     pub fn lt<'a, 'b, Q>(&'_ self, a: &'a Q, b: &'b Q) -> bool
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,  {
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
         let (a_ctr, b_ctr) = self.compare_helper(a, b);
 
         if a_ctr < b_ctr {
@@ -334,9 +336,10 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
 
     /// `gt` compares `a` and `b`, returns if `a`'s counter is greater than `b`'s counter.
     pub fn gt<'a, 'b, Q>(&'_ self, a: &'a Q, b: &'b Q) -> bool
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,  {
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
         let (a_ctr, b_ctr) = self.compare_helper(a, b);
 
         if a_ctr > b_ctr {
@@ -348,9 +351,10 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
 
     /// `ge` compares `a` and `b`, returns if `a`'s counter is greater or equal to `b`'s counter.
     pub fn ge<'a, 'b, Q>(&'_ self, a: &'a Q, b: &'b Q) -> bool
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,  {
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
+    {
         let (a_ctr, b_ctr) = self.compare_helper(a, b);
 
         if a_ctr >= b_ctr {
@@ -361,9 +365,9 @@ impl<K: Hash + Eq, KH: KeyHasher<K>> TinyLFU<K, KH> {
     }
 
     fn compare_helper<'a, 'b, Q>(&'_ self, a: &'a Q, b: &'b Q) -> (u64, u64)
-        where
-            KeyRef<K>: Borrow<Q>,
-            Q: Hash + Eq + ?Sized,
+    where
+        KeyRef<K>: Borrow<Q>,
+        Q: Hash + Eq + ?Sized,
     {
         let akh = self.hash_key(a);
         let mut a_ctr = 0;

@@ -86,7 +86,9 @@ impl<FH: BuildHasher, RH: BuildHasher> SegmentedCacheBuilder<FH, RH> {
     /// Finalize the builder to [`SegmentedCache`]
     ///
     /// [`SegmentedCache`]: struct.SegmentedCache.html
-    pub fn finalize<K: Hash + Eq, V>(self) -> Result<SegmentedCache<K, V, FH, RH>, CacheError> {
+    pub fn finalize<K: Hash + Eq + core::fmt::Debug, V>(
+        self,
+    ) -> Result<SegmentedCache<K, V, FH, RH>, CacheError> {
         if self.protected_size == 0 {
             return Err(CacheError::InvalidSize(0));
         }
@@ -157,7 +159,7 @@ pub struct SegmentedCache<K, V, FH = DefaultHashBuilder, RH = DefaultHashBuilder
     protected: RawLRU<K, V, DefaultEvictCallback, FH>,
 }
 
-impl<K: Hash + Eq, V> SegmentedCache<K, V> {
+impl<K: Hash + Eq + core::fmt::Debug, V> SegmentedCache<K, V> {
     /// Create a `SegmentedCache` with size and default configurations.
     pub fn new(probationary_size: usize, protected_size: usize) -> Result<Self, CacheError> {
         SegmentedCacheBuilder::new(probationary_size, protected_size).finalize()
@@ -187,7 +189,9 @@ impl<K: Hash + Eq, V> SegmentedCache<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V, FH: BuildHasher, RH: BuildHasher> SegmentedCache<K, V, FH, RH> {
+impl<K: Hash + Eq + core::fmt::Debug, V, FH: BuildHasher, RH: BuildHasher>
+    SegmentedCache<K, V, FH, RH>
+{
     /// Create a [`AdaptiveCache`] from [`SegmentedCacheBuilder`].
     ///
     /// # Example
@@ -322,7 +326,7 @@ impl<K: Hash + Eq, V, FH: BuildHasher, RH: BuildHasher> SegmentedCache<K, V, FH,
     }
 }
 
-impl<K: Hash + Eq, V, FH: BuildHasher, RH: BuildHasher> Cache<K, V>
+impl<K: Hash + Eq + core::fmt::Debug, V, FH: BuildHasher, RH: BuildHasher> Cache<K, V>
     for SegmentedCache<K, V, FH, RH>
 {
     /// Puts a key-value pair into cache, returns a [`PutResult`].

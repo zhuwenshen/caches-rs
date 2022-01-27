@@ -148,7 +148,7 @@ impl<RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: BuildHasher>
     /// Finalize the builder to [`TwoQueueCache`]
     ///
     /// [`TwoQueueCache`]: struct.TwoQueueCache.html
-    pub fn finalize<K: Hash + Eq, V>(
+    pub fn finalize<K: Hash + Eq + core::fmt::Debug, V>(
         self,
     ) -> Result<AdaptiveCache<K, V, RH, REH, FH, FEH>, CacheError> {
         let size = self.size;
@@ -289,7 +289,7 @@ pub struct AdaptiveCache<
     frequent_evict: RawLRU<K, V, DefaultEvictCallback, FEH>,
 }
 
-impl<K: Hash + Eq, V> AdaptiveCache<K, V> {
+impl<K: Hash + Eq + core::fmt::Debug, V> AdaptiveCache<K, V> {
     /// Create a `AdaptiveCache` with size and default configurations.
     pub fn new(size: usize) -> Result<Self, CacheError> {
         AdaptiveCacheBuilder::new(size).finalize()
@@ -321,8 +321,14 @@ impl<K: Hash + Eq, V> AdaptiveCache<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V, RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: BuildHasher>
-    Cache<K, V> for AdaptiveCache<K, V, RH, REH, FH, FEH>
+impl<
+        K: Hash + Eq + core::fmt::Debug,
+        V,
+        RH: BuildHasher,
+        REH: BuildHasher,
+        FH: BuildHasher,
+        FEH: BuildHasher,
+    > Cache<K, V> for AdaptiveCache<K, V, RH, REH, FH, FEH>
 {
     fn put(&mut self, k: K, mut v: V) -> PutResult<K, V> {
         let key_ref = KeyRef { k: &k };
@@ -374,12 +380,24 @@ impl<K: Hash + Eq, V, RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: B
             } else {
                 self.p += delta;
             }
-
+            unsafe {
+                std::println!(
+                    "1 remove key:{:?}, {}",
+                    key_ref.k.read_unaligned(),
+                    self.recent_evict.contains(&key_ref)
+                );
+            }
             // potentially need to make room in the cache
             if self.recent.len() + self.frequent.len() >= self.size {
                 self.replace(false);
             }
-
+            unsafe {
+                std::println!(
+                    "remove key:{:?}, {}",
+                    key_ref.k.read_unaligned(),
+                    self.recent_evict.contains(&key_ref)
+                );
+            }
             // remove from recent evict
             let mut ent = self.recent_evict.map.remove(&key_ref).unwrap();
             let ent_ptr = ent.as_mut();
@@ -676,8 +694,14 @@ impl<K: Hash + Eq, V, RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: B
     }
 }
 
-impl<K: Hash + Eq, V, RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: BuildHasher>
-    AdaptiveCache<K, V, RH, REH, FH, FEH>
+impl<
+        K: Hash + Eq + core::fmt::Debug,
+        V,
+        RH: BuildHasher,
+        REH: BuildHasher,
+        FH: BuildHasher,
+        FEH: BuildHasher,
+    > AdaptiveCache<K, V, RH, REH, FH, FEH>
 {
     /// Create a [`AdaptiveCache`] from [`AdaptiveCacheBuilder`].
     ///
@@ -1975,5 +1999,15 @@ mod test {
         assert_eq!(cache.peek(&1), Some(&1));
         cache.put(3, 3);
         assert!(!cache.contains(&1));
+    }
+
+    #[test]
+    fn test_bug2() {
+        let mut cache = AdaptiveCache::new(2).unwrap();
+        cache.put(1, ());
+        cache.put(2, ());
+        cache.put(3, ());
+        cache.put(4, ());
+        cache.put(1, ());
     }
 }

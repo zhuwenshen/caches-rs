@@ -175,7 +175,9 @@ impl<RH: BuildHasher, FH: BuildHasher, GH: BuildHasher> TwoQueueCacheBuilder<RH,
     /// Finalize the builder to [`TwoQueueCache`]
     ///
     /// [`TwoQueueCache`]: struct.TwoQueueCache.html
-    pub fn finalize<K: Hash + Eq, V>(self) -> Result<TwoQueueCache<K, V, RH, FH, GH>, CacheError> {
+    pub fn finalize<K: Hash + Eq + core::fmt::Debug, V>(
+        self,
+    ) -> Result<TwoQueueCache<K, V, RH, FH, GH>, CacheError> {
         let size = self.size;
         if size == 0 {
             return Err(CacheError::InvalidSize(0));
@@ -268,7 +270,7 @@ impl<RH: BuildHasher, FH: BuildHasher, GH: BuildHasher> TwoQueueCacheBuilder<RH,
 /// [`RawLRU`]: struct.RawLRU.html
 /// [`AdaptiveCache`]: struct.AdaptiveCache.html
 pub struct TwoQueueCache<
-    K: Hash + Eq,
+    K: Hash + Eq + core::fmt::Debug,
     V,
     RH = DefaultHashBuilder,
     FH = DefaultHashBuilder,
@@ -281,7 +283,7 @@ pub struct TwoQueueCache<
     ghost: RawLRU<K, V, DefaultEvictCallback, GH>,
 }
 
-impl<K: Hash + Eq, V> TwoQueueCache<K, V> {
+impl<K: Hash + Eq + core::fmt::Debug, V> TwoQueueCache<K, V> {
     /// Create a `TwoQueueCache` with size and default configurations.
     pub fn new(size: usize) -> Result<Self, CacheError> {
         Self::with_2q_parameters(size, DEFAULT_2Q_RECENT_RATIO, DEFAULT_2Q_GHOST_RATIO)
@@ -381,8 +383,8 @@ impl<K: Hash + Eq, V> TwoQueueCache<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher> Cache<K, V>
-    for TwoQueueCache<K, V, RH, FH, GH>
+impl<K: Hash + Eq + core::fmt::Debug, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher>
+    Cache<K, V> for TwoQueueCache<K, V, RH, FH, GH>
 {
     /// Puts a key-value pair to the cache.
     ///
@@ -768,7 +770,7 @@ impl<K: Hash + Eq, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher> Cache<K
     }
 }
 
-impl<K: Hash + Eq, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher>
+impl<K: Hash + Eq + core::fmt::Debug, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher>
     TwoQueueCache<K, V, RH, FH, GH>
 {
     /// Create a [`TwoQueueCache`] from [`TwoQueueCacheBuilder`].
@@ -1580,8 +1582,8 @@ impl<K: Hash + Eq, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher>
     }
 }
 
-impl<K: Hash + Eq, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher> fmt::Debug
-    for TwoQueueCache<K, V, RH, FH, GH>
+impl<K: Hash + Eq + core::fmt::Debug, V, RH: BuildHasher, FH: BuildHasher, GH: BuildHasher>
+    fmt::Debug for TwoQueueCache<K, V, RH, FH, GH>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("TwoQueueCache")

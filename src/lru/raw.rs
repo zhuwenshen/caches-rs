@@ -164,7 +164,7 @@ pub struct RawLRU<K, V, E = DefaultEvictCallback, S = DefaultHashBuilder> {
     tail: *mut EntryNode<K, V>,
 }
 
-impl<K: Hash + Eq, V> RawLRU<K, V> {
+impl<K: Hash + Eq + core::fmt::Debug, V> RawLRU<K, V> {
     /// Creates a new LRU Cache that holds at most `cap` items.
     ///
     /// # Example
@@ -184,7 +184,7 @@ impl<K: Hash + Eq, V> RawLRU<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V, S: BuildHasher> RawLRU<K, V, DefaultEvictCallback, S> {
+impl<K: Hash + Eq + core::fmt::Debug, V, S: BuildHasher> RawLRU<K, V, DefaultEvictCallback, S> {
     /// Creates a new LRU Cache that holds at most `cap` items and
     /// uses the provided hash builder to hash keys.
     ///
@@ -197,17 +197,11 @@ impl<K: Hash + Eq, V, S: BuildHasher> RawLRU<K, V, DefaultEvictCallback, S> {
     /// let mut cache: RawLRU<isize, &str> = RawLRU::with_hasher(10, s).unwrap();
     /// ```
     pub fn with_hasher(cap: usize, hash_builder: S) -> Result<Self, CacheError> {
-        check_size(cap).map(|_| {
-            Self::construct(
-                cap,
-                HashMap::with_hasher(hash_builder),
-                None,
-            )
-        })
+        check_size(cap).map(|_| Self::construct(cap, HashMap::with_hasher(hash_builder), None))
     }
 }
 
-impl<K: Hash + Eq, V, E: OnEvictCallback> RawLRU<K, V, E, DefaultHashBuilder> {
+impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback> RawLRU<K, V, E, DefaultHashBuilder> {
     /// Creates a new LRU Cache that holds at most `cap` items and
     /// uses the provided evict callback.
     ///
@@ -248,7 +242,9 @@ impl<K: Hash + Eq, V, E: OnEvictCallback> RawLRU<K, V, E, DefaultHashBuilder> {
     }
 }
 
-impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> Cache<K, V> for RawLRU<K, V, E, S> {
+impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> Cache<K, V>
+    for RawLRU<K, V, E, S>
+{
     /// Puts a key-value pair into cache, returns a [`PutResult`].
     ///
     /// # Example
@@ -542,7 +538,9 @@ impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> Cache<K, V> for RawLRU
     }
 }
 
-impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> ResizableCache for RawLRU<K, V, E, S> {
+impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> ResizableCache
+    for RawLRU<K, V, E, S>
+{
     /// Resizes the cache. If the new capacity is smaller than the size of the current
     /// cache any entries past the new capacity are discarded.
     ///
@@ -582,7 +580,7 @@ impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> ResizableCache for Raw
     }
 }
 
-impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> RawLRU<K, V, E, S> {
+impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> RawLRU<K, V, E, S> {
     /// Creates a new LRU Cache that holds at most `cap` items and
     /// uses the provided evict callback and the provided hash builder to hash keys.
     ///
@@ -613,13 +611,7 @@ impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> RawLRU<K, V, E, S> {
     /// let cache: RawLRU<isize, &str, EvictedCounter, DefaultHashBuilder> = RawLRU::with_on_evict_cb_and_hasher(10, EvictedCounter::default(), DefaultHashBuilder::default()).unwrap();
     /// ```
     pub fn with_on_evict_cb_and_hasher(cap: usize, cb: E, hasher: S) -> Result<Self, CacheError> {
-        check_size(cap).map(|_| {
-            Self::construct(
-                cap,
-                HashMap::with_hasher(hasher),
-                Some(cb),
-            )
-        })
+        check_size(cap).map(|_| Self::construct(cap, HashMap::with_hasher(hasher), Some(cb)))
     }
 
     /// Creates a new LRU Cache with the given capacity.
@@ -1397,6 +1389,10 @@ impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> RawLRU<K, V, E, S> {
             let old_key = KeyRef {
                 k: unsafe { &(*(*(*self.tail).prev).key.as_ptr()) },
             };
+            unsafe {
+                std::println!("remove old key:{:?}", old_key.k.read_unaligned());
+            }
+
             let old_node = self.map.remove(&old_key);
             match old_node {
                 None => None,
@@ -1410,6 +1406,14 @@ impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> RawLRU<K, V, E, S> {
             None
         }
     }
+    // fn print(&self){
+    //     unsafe {
+    //         let mut node = self.head;
+    //         while true{
+    //             node
+    //         }
+    //     }
+    // }
 
     pub(crate) fn detach(&mut self, node: *mut EntryNode<K, V>) {
         unsafe {
@@ -1450,7 +1454,7 @@ impl<K, V, E, S> Drop for RawLRU<K, V, E, S> {
     }
 }
 
-impl<'a, K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> IntoIterator
+impl<'a, K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> IntoIterator
     for &'a RawLRU<K, V, E, S>
 {
     type Item = (&'a K, &'a V);
@@ -1461,7 +1465,7 @@ impl<'a, K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> IntoIterator
     }
 }
 
-impl<'a, K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> IntoIterator
+impl<'a, K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> IntoIterator
     for &'a mut RawLRU<K, V, E, S>
 {
     type Item = (&'a K, &'a mut V);
@@ -1472,7 +1476,7 @@ impl<'a, K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> IntoIterator
     }
 }
 
-impl<K: Hash + Eq, V> FromIterator<(K, V)> for RawLRU<K, V> {
+impl<K: Hash + Eq + core::fmt::Debug, V> FromIterator<(K, V)> for RawLRU<K, V> {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let iter = iter.into_iter();
         let mut this = Self::new(iter.size_hint().0).unwrap();
@@ -1483,20 +1487,22 @@ impl<K: Hash + Eq, V> FromIterator<(K, V)> for RawLRU<K, V> {
     }
 }
 
-impl<K: Hash + Eq + Clone, V: Clone> From<&[(K, V)]> for RawLRU<K, V> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug, V: Clone> From<&[(K, V)]> for RawLRU<K, V> {
     fn from(vals: &[(K, V)]) -> Self {
         Self::from(vals.to_vec())
     }
 }
 
-impl<K: Hash + Eq + Clone, V: Clone> From<&mut [(K, V)]> for RawLRU<K, V> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug, V: Clone> From<&mut [(K, V)]> for RawLRU<K, V> {
     fn from(vals: &mut [(K, V)]) -> Self {
         Self::from(vals.to_vec())
     }
 }
 
 #[cfg(feature = "nightly")]
-impl<K: Hash + Eq + Clone, V: Clone, const N: usize> From<[(K, V); N]> for RawLRU<K, V> {
+impl<K: Hash + Eq + Clone + core::fmt::Debug, V: Clone, const N: usize> From<[(K, V); N]>
+    for RawLRU<K, V>
+{
     fn from(vals: [(K, V); N]) -> Self {
         vals.to_vec().into_iter().collect()
     }
@@ -1505,7 +1511,7 @@ impl<K: Hash + Eq + Clone, V: Clone, const N: usize> From<[(K, V); N]> for RawLR
 macro_rules! impl_rawlru_from_kv_collections {
     ($($t:ty),*) => {
         $(
-        impl<K: Hash + Eq, V> From<$t> for RawLRU<K, V>
+        impl<K: Hash + Eq + core::fmt::Debug, V> From<$t> for RawLRU<K, V>
         {
             fn from(vals: $t) -> Self {
                 vals.into_iter().collect()
@@ -1532,7 +1538,9 @@ impl_rawlru_from_kv_collections! (
 unsafe impl<K: Send, V: Send, E: Send, S: Send> Send for RawLRU<K, V, E, S> {}
 unsafe impl<K: Sync, V: Sync, E: Send, S: Sync> Sync for RawLRU<K, V, E, S> {}
 
-impl<K: Hash + Eq, V, E: OnEvictCallback, S: BuildHasher> fmt::Debug for RawLRU<K, V, E, S> {
+impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> fmt::Debug
+    for RawLRU<K, V, E, S>
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("RawLRU")
             .field("len", &self.len())
@@ -2897,7 +2905,7 @@ mod tests {
     fn test_no_memory_leaks_with_remove() {
         static DROP_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-        #[derive(Hash, Eq)]
+        #[derive(Hash, Eq, Debug)]
         struct KeyDropCounter(usize);
 
         impl PartialEq for KeyDropCounter {
