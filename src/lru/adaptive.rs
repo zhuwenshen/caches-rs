@@ -380,35 +380,40 @@ impl<
             } else {
                 self.p += delta;
             }
-            unsafe {
-                std::println!(
-                    "1 remove key:{:?}, {}",
-                    key_ref.k.read_unaligned(),
-                    self.recent_evict.contains(&key_ref)
-                );
-            }
+            // unsafe {
+            //     std::println!(
+            //         "1 remove key:{:?}, {}",
+            //         key_ref.k.read_unaligned(),
+            //         self.recent_evict.contains(&key_ref)
+            //     );
+            // }
+            // self.recent_evict.print();
+            // std::println!("replace before");
             // potentially need to make room in the cache
             if self.recent.len() + self.frequent.len() >= self.size {
                 self.replace(false);
             }
-            unsafe {
-                std::println!(
-                    "remove key:{:?}, {}",
-                    key_ref.k.read_unaligned(),
-                    self.recent_evict.contains(&key_ref)
-                );
-            }
+            // std::println!("replace after");
+            // self.recent_evict.print();
+            // unsafe {
+            //     std::println!(
+            //         "remove key:{:?}, {}",
+            //         key_ref.k.read_unaligned(),
+            //         self.recent_evict.contains(&key_ref)
+            //     );
+            // }
             // remove from recent evict
-            let mut ent = self.recent_evict.map.remove(&key_ref).unwrap();
-            let ent_ptr = ent.as_mut();
-            self.recent_evict.detach(ent_ptr);
-            unsafe {
-                swap_value(&mut v, ent_ptr);
-            }
+            if let Some(mut ent) = self.recent_evict.map.remove(&key_ref) {
+                let ent_ptr = ent.as_mut();
+                self.recent_evict.detach(ent_ptr);
+                unsafe {
+                    swap_value(&mut v, ent_ptr);
+                }
 
-            // add the key to the frequently used list
-            self.frequent.put_box(ent);
-            return PutResult::Update(v);
+                // add the key to the frequently used list
+                self.frequent.put_box(ent);
+                return PutResult::Update(v);
+            }
         }
 
         // Check if this value was recently evicted as part of the
@@ -2009,5 +2014,8 @@ mod test {
         cache.put(3, ());
         cache.put(4, ());
         cache.put(1, ());
+        assert_eq!(cache.size, 2);
+        assert!(cache.contains(&1));
+        assert!(cache.contains(&4));
     }
 }

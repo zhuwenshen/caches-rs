@@ -1389,9 +1389,10 @@ impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> Raw
             let old_key = KeyRef {
                 k: unsafe { &(*(*(*self.tail).prev).key.as_ptr()) },
             };
-            unsafe {
-                std::println!("remove old key:{:?}", old_key.k.read_unaligned());
-            }
+            // unsafe {
+            //     std::println!("remove old key:{:?}", old_key.k.read_unaligned());
+            // }
+            // self.print();
 
             let old_node = self.map.remove(&old_key);
             match old_node {
@@ -1399,6 +1400,10 @@ impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> Raw
                 Some(mut old_node) => {
                     let node_ptr: *mut EntryNode<K, V> = &mut *old_node;
                     self.detach(node_ptr);
+                    // self.print();
+                    // unsafe {
+                    //     std::println!("re old key:{:?}", (*old_node).key.as_ptr().read_unaligned());
+                    // }
                     Some(old_node)
                 }
             }
@@ -1406,14 +1411,23 @@ impl<K: Hash + Eq + core::fmt::Debug, V, E: OnEvictCallback, S: BuildHasher> Raw
             None
         }
     }
-    // fn print(&self){
-    //     unsafe {
-    //         let mut node = self.head;
-    //         while true{
-    //             node
-    //         }
-    //     }
-    // }
+    pub(crate) fn print(&self) {
+        // unsafe {
+        //     let mut node = self.head;
+        //     let mut data = std::vec![];
+        //     while !node.is_null() {
+        //         data.push(std::format!("{:?}", (*node).key.as_ptr().read_unaligned()));
+        //         node = (*node).next;
+        //     }
+        //     std::println!("{}", data.join("->"));
+        //
+        //     let mut map = crate::std::collections::HashSet::new();
+        //     for (k, _) in self.map.iter() {
+        //         map.insert(std::format!("{:?}", k.k.read_unaligned()));
+        //     }
+        //     std::println!("map:{:?}", map);
+        // }
+    }
 
     pub(crate) fn detach(&mut self, node: *mut EntryNode<K, V>) {
         unsafe {
