@@ -381,16 +381,17 @@ impl<K: Hash + Eq, V, RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: B
             }
 
             // remove from recent evict
-            let mut ent = self.recent_evict.map.remove(&key_ref).unwrap();
-            let ent_ptr = ent.as_mut();
-            self.recent_evict.detach(ent_ptr);
-            unsafe {
-                swap_value(&mut v, ent_ptr);
-            }
+            if let Some(mut ent) = self.recent_evict.map.remove(&key_ref) {
+                let ent_ptr = ent.as_mut();
+                self.recent_evict.detach(ent_ptr);
+                unsafe {
+                    swap_value(&mut v, ent_ptr);
+                }
 
-            // add the key to the frequently used list
-            self.frequent.put_box(ent);
-            return PutResult::Update(v);
+                // add the key to the frequently used list
+                self.frequent.put_box(ent);
+                return PutResult::Update(v);
+            }
         }
 
         // Check if this value was recently evicted as part of the
@@ -414,17 +415,18 @@ impl<K: Hash + Eq, V, RH: BuildHasher, REH: BuildHasher, FH: BuildHasher, FEH: B
             }
 
             // remove from frequent evict
-            let mut ent = self.frequent_evict.map.remove(&key_ref).unwrap();
-            let ent_ptr = ent.as_mut();
-            self.frequent_evict.detach(ent_ptr);
+            if let Some(mut ent) = self.frequent_evict.map.remove(&key_ref) {
+                let ent_ptr = ent.as_mut();
+                self.frequent_evict.detach(ent_ptr);
 
-            unsafe {
-                swap_value(&mut v, ent_ptr);
+                unsafe {
+                    swap_value(&mut v, ent_ptr);
+                }
+
+                // add the key to the frequently used list
+                self.frequent.put_box(ent);
+                return PutResult::Update(v);
             }
-
-            // add the key to the frequently used list
-            self.frequent.put_box(ent);
-            return PutResult::Update(v);
         }
 
         // Potentially need to make room in the cache
@@ -1975,5 +1977,18 @@ mod test {
         assert_eq!(cache.peek(&1), Some(&1));
         cache.put(3, 3);
         assert!(!cache.contains(&1));
+    }
+
+    #[test]
+    fn test_put_evict_item() {
+        let mut cache = AdaptiveCache::new(2).unwrap();
+        cache.put(1, ());
+        cache.put(2, ());
+        cache.put(3, ());
+        cache.put(4, ());
+        cache.put(1, ());
+        assert_eq!(cache.size, 2);
+        assert!(cache.contains(&1));
+        assert!(cache.contains(&4));
     }
 }
